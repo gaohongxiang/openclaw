@@ -917,15 +917,15 @@ export function loadOpenClawPlugins(options: PluginLoadOptions = {}): PluginRegi
       continue;
     }
 
-    if (validateOnly) {
-      registry.plugins.push(record);
-      seenIds.set(pluginId, candidate.origin);
-      continue;
-    }
-
     if (typeof register !== "function") {
       logger.error(`[plugins] ${record.id} missing register/activate export`);
       pushPluginLoadError("plugin export missing register/activate");
+      continue;
+    }
+
+    if (validateOnly) {
+      registry.plugins.push(record);
+      seenIds.set(pluginId, candidate.origin);
       continue;
     }
 

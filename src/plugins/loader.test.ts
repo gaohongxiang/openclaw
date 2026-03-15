@@ -1236,6 +1236,28 @@ describe("loadOpenClawPlugins", () => {
     expect(disabled?.status).toBe("disabled");
   });
 
+  it("treats validate-mode plugins without register exports as errors", () => {
+    process.env.OPENCLAW_BUNDLED_PLUGINS_DIR = "/nonexistent/bundled/plugins";
+    const plugin = writePlugin({
+      id: "validate-missing-register",
+      body: `module.exports = { id: "validate-missing-register" };`,
+    });
+
+    const registry = loadOpenClawPlugins({
+      cache: false,
+      mode: "validate",
+      config: {
+        plugins: {
+          load: { paths: [plugin.file] },
+        },
+      },
+    });
+
+    const entry = registry.plugins.find((record) => record.id === "validate-missing-register");
+    expect(entry?.status).toBe("error");
+    expect(entry?.error).toContain("plugin export missing register/activate");
+  });
+
   it("blocks before_prompt_build but preserves legacy model overrides when prompt injection is disabled", async () => {
     useNoBundledPlugins();
     const plugin = writePlugin({

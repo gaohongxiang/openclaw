@@ -9,7 +9,7 @@ import {
   stubEmptyGatewayEnv,
 } from "./test-helpers/lifecycle-core-harness.js";
 
-const loadConfig = vi.fn(() => ({
+const loadConfig = vi.fn<() => OpenClawConfig>(() => ({
   gateway: {
     auth: {
       token: "config-token",
@@ -122,6 +122,17 @@ describe("runServiceRestart token drift", () => {
 
     const payload = readJsonLog<{ warnings?: string[] }>();
     expect(payload.warnings).toBeUndefined();
+  });
+
+  it("surfaces unexpected drift-check failures as warnings", async () => {
+    service.readCommand.mockRejectedValueOnce(new Error("read command failed"));
+
+    await runServiceRestart(createServiceRunArgs(true));
+
+    const payload = readJsonLog<{ warnings?: string[] }>();
+    expect(payload.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining("Unable to verify gateway token drift: read command failed")]),
+    );
   });
 
   it("skips drift warning when disabled", async () => {

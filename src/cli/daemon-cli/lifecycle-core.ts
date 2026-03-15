@@ -420,9 +420,11 @@ export async function runServiceRestart(params: {
         }
       }
     } catch (err) {
-      // Best-effort drift check; SecretRef-unavailable is handled by
-      // resolveGatewayTokenForDriftCheck returning undefined.
-      void err;
+      const warning = `Unable to verify gateway token drift: ${err instanceof Error ? err.message : String(err)}`;
+      warnings.push(warning);
+      if (!json) {
+        defaultRuntime.log(`\n⚠️  ${warning}\n`);
+      }
     }
   }
 

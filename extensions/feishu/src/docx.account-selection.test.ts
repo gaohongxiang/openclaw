@@ -5,6 +5,16 @@ import { createToolFactoryHarness } from "./tool-factory-test-harness.js";
 
 const createFeishuClientMock = vi.fn((creds: { appId?: string } | undefined) => ({
   __appId: creds?.appId,
+  application: {
+    scope: {
+      list: vi.fn().mockResolvedValue({
+        code: 0,
+        data: {
+          scopes: [],
+        },
+      }),
+    },
+  },
 }));
 
 vi.mock("./client.js", () => {
@@ -99,5 +109,36 @@ describe("feishu_doc account selection", () => {
       }),
     );
     expect(createFeishuClientMock).not.toHaveBeenCalled();
+  });
+
+  test("feishu_app_scopes allows explicit accountId override when defaultAccount disables scopes", async () => {
+    const cfg = {
+      channels: {
+        feishu: {
+          enabled: true,
+          defaultAccount: "b",
+          accounts: {
+            a: { appId: "app-a", appSecret: "sec-a", tools: { scopes: true } }, // pragma: allowlist secret
+            b: { appId: "app-b", appSecret: "sec-b", tools: { scopes: false } }, // pragma: allowlist secret
+          },
+        },
+      },
+    } as OpenClawPluginApi["config"];
+
+    const { api, resolveTool } = createToolFactoryHarness(cfg);
+    registerFeishuDocTools(api);
+
+    const scopesTool = resolveTool("feishu_app_scopes", { agentAccountId: "a" });
+    await scopesTool.execute("call-enabled", { accountId: "a" });
+    const blocked = await scopesTool.execute("call-blocked", {});
+
+    expect(createFeishuClientMock.mock.calls[0]?.[0]?.appId).toBe("app-a");
+    expect(blocked).toEqual(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          error: 'Feishu scopes are disabled for account "b".',
+        }),
+      }),
+    );
   });
 });

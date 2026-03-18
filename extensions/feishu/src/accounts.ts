@@ -143,7 +143,7 @@ export function resolveFeishuAccountConfigState(params: {
   const accountEnabled = merged.enabled !== false;
   const enabled = baseEnabled && accountEnabled;
   const configured = Boolean(
-    hasConfiguredSecretInput(merged.appId) && hasConfiguredSecretInput(merged.appSecret),
+    normalizeSecretInputString(merged.appId) && hasConfiguredSecretInput(merged.appSecret),
   );
   const accountName = (merged as FeishuAccountConfig).name;
 

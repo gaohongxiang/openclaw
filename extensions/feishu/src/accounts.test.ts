@@ -377,7 +377,7 @@ describe("listEnabledFeishuAccountConfigs", () => {
       channels: {
         feishu: {
           enabled: true,
-          appId: { source: "file", provider: "default", id: "path/to/app-id" },
+          appId: "app-id",
           appSecret: { source: "file", provider: "default", id: "path/to/app-secret" },
           accounts: {
             main: {
@@ -400,6 +400,26 @@ describe("listEnabledFeishuAccountConfigs", () => {
         }),
       }),
     );
+  });
+
+  it("does not treat SecretRef-style appId objects as configured in config-only preflight", () => {
+    const accounts = listEnabledFeishuAccountConfigs({
+      channels: {
+        feishu: {
+          enabled: true,
+          appId: { source: "file", provider: "default", id: "path/to/app-id" } as never,
+          appSecret: { source: "file", provider: "default", id: "path/to/app-secret" },
+          accounts: {
+            main: {
+              enabled: true,
+              tools: { doc: true },
+            },
+          },
+        },
+      },
+    } as never);
+
+    expect(accounts).toHaveLength(0);
   });
 
   it("preserves inherited tools flags when account tools only override a subset", () => {

@@ -1458,16 +1458,21 @@ export function registerFeishuDocTools(api: OpenClawPluginApi) {
         label: "Feishu App Scopes",
         description:
           "List current app permissions (scopes). Use to debug permission issues or check available capabilities.",
-        parameters: Type.Object({}),
-        async execute() {
+        parameters: Type.Object({
+          accountId: Type.Optional(Type.String()),
+        }),
+        async execute(_toolCallId, params) {
+          const p = params as { accountId?: string };
           try {
             const account = resolveFeishuToolAccountConfigState({
               api,
+              executeParams: p,
               defaultAccountId: ctx.agentAccountId,
             });
             if (
               !isFeishuToolEnabledForRoutedAccount({
                 api,
+                executeParams: p,
                 defaultAccountId: ctx.agentAccountId,
                 tool: "scopes",
               })
@@ -1476,7 +1481,7 @@ export function registerFeishuDocTools(api: OpenClawPluginApi) {
                 error: `Feishu scopes are disabled for account "${account.accountId}".`,
               });
             }
-            const result = await listAppScopes(getClient(undefined, ctx.agentAccountId));
+            const result = await listAppScopes(getClient(p, ctx.agentAccountId));
             return json(result);
           } catch (err) {
             return json({ error: err instanceof Error ? err.message : String(err) });

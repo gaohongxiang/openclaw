@@ -15,7 +15,7 @@ describe("feishu plugin register SecretRef regression", () => {
             enabled: true,
             accounts: {
               main: {
-                appId: { source: "file", provider: "default", id: "path/to/app-id" },
+                appId: "app-id",
                 appSecret: { source: "file", provider: "default", id: "path/to/app-secret" },
                 tools: {
                   chat: true,

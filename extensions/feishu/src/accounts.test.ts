@@ -401,4 +401,31 @@ describe("listEnabledFeishuAccountConfigs", () => {
       }),
     );
   });
+
+  it("preserves inherited tools flags when account tools only override a subset", () => {
+    const accounts = listEnabledFeishuAccountConfigs({
+      channels: {
+        feishu: {
+          enabled: true,
+          appId: "app",
+          appSecret: "secret", // pragma: allowlist secret
+          tools: {
+            chat: false,
+          },
+          accounts: {
+            main: {
+              enabled: true,
+              tools: { doc: true },
+            },
+          },
+        },
+      },
+    } as never);
+
+    expect(accounts).toHaveLength(1);
+    expect(accounts[0]?.config.tools).toEqual({
+      chat: false,
+      doc: true,
+    });
+  });
 });

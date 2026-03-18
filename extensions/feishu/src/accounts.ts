@@ -100,11 +100,20 @@ function mergeFeishuAccountConfig(cfg: ClawdbotConfig, accountId: string): Feish
   // Get account-specific overrides
   const account = resolveAccountConfig(cfg, accountId) ?? {};
 
-  // Merge: account config overrides base config
-  return { ...base, ...account } as FeishuConfig;
+  // Merge account overrides over base config while preserving nested tools defaults.
+  const merged = { ...base, ...account } as FeishuConfig;
+  const baseTools = base.tools;
+  const accountTools = account.tools;
+  if (baseTools || accountTools) {
+    merged.tools = {
+      ...(baseTools ?? {}),
+      ...(accountTools ?? {}),
+    };
+  }
+  return merged;
 }
 
-function resolveFeishuAccountConfigState(params: {
+export function resolveFeishuAccountConfigState(params: {
   cfg: ClawdbotConfig;
   accountId?: string | null;
 }): {

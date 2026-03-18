@@ -140,6 +140,28 @@ describe("feishu tool account routing", () => {
     expect(createFeishuClientMock.mock.calls.at(-1)?.[0]?.appId).toBe("app-b");
   });
 
+  test("chat tool blocks execution when the routed account disables chat", async () => {
+    const { api, resolveTool } = createToolFactoryHarness(
+      createConfig({
+        toolsA: { chat: true },
+        toolsB: { chat: false },
+      }),
+    );
+    registerFeishuChatTools(api);
+
+    const tool = resolveTool("feishu_chat", { agentAccountId: "b" });
+    const result = await tool.execute("call", { action: "info", chat_id: "oc_b" });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          error: 'Feishu chat is disabled for account "b".',
+        }),
+      }),
+    );
+    expect(createFeishuClientMock).not.toHaveBeenCalled();
+  });
+
   test("perm tool registers when only second account enables it and routes to agentAccountId", async () => {
     const { api, resolveTool } = createToolFactoryHarness(
       createConfig({

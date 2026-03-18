@@ -140,6 +140,23 @@ describe("feishu tool account routing", () => {
     expect(createFeishuClientMock.mock.calls.at(-1)?.[0]?.appId).toBe("app-b");
   });
 
+  test("chat tool allows explicit accountId override when defaultAccount disables chat", async () => {
+    chatGetMock.mockResolvedValue({ code: 0, data: { name: "chat", user_count: 1 } });
+    const { api, resolveTool } = createToolFactoryHarness(
+      createConfig({
+        defaultAccount: "b",
+        toolsA: { chat: true },
+        toolsB: { chat: false },
+      }),
+    );
+    registerFeishuChatTools(api);
+
+    const tool = resolveTool("feishu_chat", { agentAccountId: "a" });
+    await tool.execute("call", { action: "info", chat_id: "oc_a", accountId: "a" });
+
+    expect(createFeishuClientMock.mock.calls.at(-1)?.[0]?.appId).toBe("app-a");
+  });
+
   test("chat tool blocks execution when the routed account disables chat", async () => {
     const { api, resolveTool } = createToolFactoryHarness(
       createConfig({

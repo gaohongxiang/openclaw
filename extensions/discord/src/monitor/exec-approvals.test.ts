@@ -714,8 +714,6 @@ describe("DiscordExecApprovalHandler target config", () => {
 
 describe("DiscordExecApprovalHandler gateway auth", () => {
   it("passes the shared gateway token from config into GatewayClient", async () => {
-    vi.stubEnv("OPENCLAW_GATEWAY_TOKEN", undefined);
-    vi.stubEnv("CLAWDBOT_GATEWAY_TOKEN", undefined);
     const handler = new DiscordExecApprovalHandler({
       token: "discord-bot-token",
       accountId: "default",
@@ -729,11 +727,7 @@ describe("DiscordExecApprovalHandler gateway auth", () => {
       },
     });
 
-    try {
-      await handler.start();
-    } finally {
-      vi.unstubAllEnvs();
-    }
+    await handler.start();
 
     expect(gatewayClientStarts).toHaveBeenCalledTimes(1);
     expect(gatewayClientParams[0]).toMatchObject({

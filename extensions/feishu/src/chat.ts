@@ -1,8 +1,8 @@
 import type * as Lark from "@larksuiteoapi/node-sdk";
 import type { OpenClawPluginApi } from "../runtime-api.js";
-import { listEnabledFeishuAccounts } from "./accounts.js";
+import { listEnabledFeishuAccountConfigs } from "./accounts.js";
 import { FeishuChatSchema, type FeishuChatParams } from "./chat-schema.js";
-import { createFeishuClient } from "./client.js";
+import { createFeishuToolClient, resolveAnyEnabledFeishuToolsConfig } from "./tool-account.js";
 import { resolveToolsConfig } from "./tools-config.js";
 
 function json(data: unknown) {
@@ -126,20 +126,25 @@ export function registerFeishuChatTools(api: OpenClawPluginApi) {
     return;
   }
 
-  const accounts = listEnabledFeishuAccounts(api.config);
+  const accounts = listEnabledFeishuAccountConfigs(api.config);
   if (accounts.length === 0) {
     api.logger.debug?.("feishu_chat: No Feishu accounts configured, skipping chat tools");
     return;
   }
 
-  const firstAccount = accounts[0];
-  const toolsCfg = resolveToolsConfig(firstAccount.config.tools);
+  const toolsCfg = resolveAnyEnabledFeishuToolsConfig(accounts);
   if (!toolsCfg.chat) {
     api.logger.debug?.("feishu_chat: chat tool disabled in config");
     return;
   }
+  const defaultChatAccount =
+    accounts.find((account) => resolveToolsConfig(account.config.tools).chat) ?? accounts[0];
 
-  const getClient = () => createFeishuClient(firstAccount);
+  const getClient = () =>
+    createFeishuToolClient({
+      api,
+      executeParams: { accountId: defaultChatAccount?.accountId },
+    });
 
   api.registerTool(
     {

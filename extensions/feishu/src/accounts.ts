@@ -1,6 +1,10 @@
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "openclaw/plugin-sdk/account-id";
 import type { ClawdbotConfig } from "../runtime-api.js";
-import { normalizeResolvedSecretInputString, normalizeSecretInputString } from "./secret-input.js";
+import {
+  hasConfiguredSecretInput,
+  normalizeResolvedSecretInputString,
+  normalizeSecretInputString,
+} from "./secret-input.js";
 import type {
   FeishuConfig,
   FeishuAccountConfig,
@@ -97,6 +101,29 @@ function mergeFeishuAccountConfig(cfg: ClawdbotConfig, accountId: string): Feish
 
   // Merge: account config overrides base config
   return { ...base, ...account } as FeishuConfig;
+}
+
+/**
+ * List all enabled accounts that appear configured from raw config input alone.
+ * This register/preflight path intentionally does not resolve SecretRefs.
+ */
+export function listEnabledFeishuAccountConfigs(
+  cfg: ClawdbotConfig,
+): Array<{ accountId: string; config: FeishuConfig }> {
+  const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
+  const baseEnabled = feishuCfg?.enabled !== false;
+
+  return listFeishuAccountIds(cfg)
+    .map((accountId) => {
+      const config = mergeFeishuAccountConfig(cfg, accountId);
+      const enabled = baseEnabled && config.enabled !== false;
+      const configured = Boolean(
+        normalizeSecretInputString(config.appId) && hasConfiguredSecretInput(config.appSecret),
+      );
+      return { accountId, config, enabled, configured };
+    })
+    .filter((account) => account.enabled && account.configured)
+    .map(({ accountId, config }) => ({ accountId, config }));
 }
 
 /**

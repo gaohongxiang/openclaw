@@ -94,6 +94,12 @@ describe("registerFeishuChatTools", () => {
         department_ids: ["od_1"],
       }),
     );
+    expect(createFeishuClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        appId: "app_id",
+        appSecret: "app_secret",
+      }),
+    );
   });
 
   it("skips registration when chat tool is disabled", () => {
@@ -113,5 +119,41 @@ describe("registerFeishuChatTools", () => {
       registerTool,
     } as any);
     expect(registerTool).not.toHaveBeenCalled();
+  });
+
+  it("registers and uses the first chat-enabled account when an earlier account disables chat", async () => {
+    const registerTool = vi.fn();
+    registerFeishuChatTools({
+      config: {
+        channels: {
+          feishu: {
+            enabled: true,
+            accounts: {
+              a: { appId: "app_a", appSecret: "secret_a", tools: { chat: false } },
+              b: { appId: "app_b", appSecret: "secret_b", tools: { chat: true } },
+            },
+          },
+        },
+      } as any,
+      logger: { debug: vi.fn(), info: vi.fn() } as any,
+      registerTool,
+    } as any);
+
+    expect(registerTool).toHaveBeenCalledTimes(1);
+    const tool = registerTool.mock.calls[0]?.[0];
+
+    chatGetMock.mockResolvedValueOnce({
+      code: 0,
+      data: { name: "group name", user_count: 3 },
+    });
+    await tool.execute("tc_4", { action: "info", chat_id: "oc_2" });
+
+    expect(createFeishuClientMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountId: "b",
+        appId: "app_b",
+        appSecret: "secret_b",
+      }),
+    );
   });
 });

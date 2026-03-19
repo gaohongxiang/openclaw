@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  listEnabledFeishuAccountConfigs,
   resolveDefaultFeishuAccountId,
   resolveDefaultFeishuAccountSelection,
   resolveFeishuAccount,
@@ -367,5 +368,34 @@ describe("resolveFeishuAccount", () => {
         accountId: "main",
       }),
     ).not.toThrow();
+  });
+});
+
+describe("listEnabledFeishuAccountConfigs", () => {
+  it("treats SecretRef-backed accounts as configured without resolving them", () => {
+    const accounts = listEnabledFeishuAccountConfigs({
+      channels: {
+        feishu: {
+          enabled: true,
+          appId: "app-id",
+          appSecret: { source: "file", provider: "default", id: "path/to/app-secret" },
+          accounts: {
+            main: {
+              enabled: true,
+              tools: { doc: true },
+            },
+          },
+        },
+      },
+    } as never);
+
+    expect(accounts).toEqual([
+      expect.objectContaining({
+        accountId: "main",
+        config: expect.objectContaining({
+          tools: { doc: true },
+        }),
+      }),
+    ]);
   });
 });
